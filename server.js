@@ -5,7 +5,7 @@ const cors = require('cors');
 const app = express();
 connectDB();
 app.use(cors());
-app.use(express.json()); // To parse JSON bodies
+app.use(express.json({ limit: '50mb' })); // To parse JSON bodies with increased limit
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/portfolio', require('./routes/portfolioRoutes'));

@@ -1,4 +1,8 @@
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 const Portfolio = require('../models/Portfolio');
+const path = require('path');
 
 // Create a new portfolio
 exports.createPortfolio = async (req, res) => {
@@ -6,6 +10,10 @@ exports.createPortfolio = async (req, res) => {
   try {
     let portfolio = await Portfolio.findOne({ user: req.user.id });
     if (portfolio) return res.status(400).json({ msg: 'Portfolio already exists' });
+    const pdf = req.file ? {
+      data: req.file.buffer,
+      contentType: req.file.mimetype,
+    } : null;
 
     portfolio = new Portfolio({ 
         user: req.user.id, 
@@ -22,7 +30,8 @@ exports.createPortfolio = async (req, res) => {
             yearOfJoining: new Date(hist.yearOfJoining),
             yearOfLeaving: new Date(hist.yearOfLeaving),
         })),
-        portfolioLinks 
+        portfolioLinks,
+        pdf,
     });
     await portfolio.save();
     res.json(portfolio);
@@ -37,6 +46,10 @@ exports.updatePortfolio = async (req, res) => {
   try {
     let portfolio = await Portfolio.findOne({ user: req.user.id });
     if (!portfolio) return res.status(400).json({ msg: 'Portfolio not found' });
+    const pdf = req.file ? {
+      data: req.file.buffer,
+      contentType: req.file.mimetype,
+    } : portfolio.pdf;
 
     portfolio.title = title;
     portfolio.description = description;
@@ -52,9 +65,23 @@ exports.updatePortfolio = async (req, res) => {
         yearOfLeaving: new Date(hist.yearOfLeaving),
     }));
     portfolio.portfolioLinks = portfolioLinks;
-
+    portfolio.pdf = pdf;
     await portfolio.save();
     res.json(portfolio);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
+exports.getPdfById = async (req, res) => {
+  try {
+    const portfolio = await Portfolio.findById(req.params.id);
+    if (!portfolio || !portfolio.pdf) {
+      return res.status(404).json({ msg: 'PDF not found' });
+    }
+
+    res.set('Content-Type', portfolio.pdf.contentType);
+    res.send(portfolio.pdf.data);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');

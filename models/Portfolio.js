@@ -35,7 +35,11 @@ const PortfolioSchema = new mongoose.Schema({
     github:  String ,
     leetcode:  String ,
     gfg: String ,
-  }  
+  },
+  pdf: {
+    data: Buffer,
+    contentType: String,
+  },
 });
 
 module.exports = mongoose.model('Portfolio', PortfolioSchema);
